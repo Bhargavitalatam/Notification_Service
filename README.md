@@ -1,10 +1,13 @@
 # Resilient Notification Service with Apache Kafka & Circuit Breaker Pattern
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-7.4.0-black.svg)](https://kafka.apache.org/)
+[![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-7.0.1-black.svg)](https://kafka.apache.org/)
 [![Resilience4j](https://img.shields.io/badge/Resilience4j-2.2.0-red.svg)](https://resilience4j.readme.io/)
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-v3.8-blue.svg)](https://docs.docker.com/compose/)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-blue.svg)](https://docs.docker.com/compose/)
+[![Live Simulator](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-00d2ff.svg)](https://bhargavitalatam.github.io/Notification_Service/)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
+
+> 🚀 **Live Interactive Simulator & Architecture Dashboard**: [https://bhargavitalatam.github.io/Notification_Service/](https://bhargavitalatam.github.io/Notification_Service/)
 
 A production-grade, event-driven notification microservice engineered in **Java 17 / Spring Boot 3** demonstrating **Event-Driven Architecture (EDA)** with **Apache Kafka** and the **Circuit Breaker Pattern** with **Resilience4j**.
 
