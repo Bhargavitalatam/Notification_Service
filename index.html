@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resilient Notification Service | Kafka & Circuit Breaker Dashboard</title>
+  <meta name="description" content="Interactive architecture visualizer and live simulator for an enterprise Event-Driven Notification Service built with Apache Kafka, Spring Boot 3, and Resilience4j.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0e17;
+      --bg-card: rgba(16, 23, 38, 0.75);
+      --bg-card-border: rgba(255, 255, 255, 0.08);
+      --bg-card-hover: rgba(26, 36, 60, 0.85);
+      --primary: #00d2ff;
+      --primary-glow: rgba(0, 210, 255, 0.35);
+      --secondary: #3a7bd5;
+      --accent-green: #00f2fe;
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.3);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.3);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.35);
+      --purple: #8b5cf6;
+      --purple-glow: rgba(139, 92, 246, 0.35);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 10% 20%, #0d1527 0%, #060911 90%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background lights */
+    .ambient-glow {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.15;
+    }
+    .glow-1 { top: -100px; left: -100px; background: var(--primary); }
+    .glow-2 { top: 40%; right: -150px; background: var(--purple); }
+    .glow-3 { bottom: -100px; left: 30%; background: var(--success); }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header & Navigation */
+    header {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--bg-card-border);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 14, 23, 0.7);
+    }
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.5px;
+    }
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: block;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+    .btn-github {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-github:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 50px 0 30px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      background: rgba(0, 210, 255, 0.08);
+      border: 1px solid rgba(0, 210, 255, 0.25);
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero-badge .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--primary);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 210, 255, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); }
+    }
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 780px;
+      margin: 0 auto 30px;
+    }
+    .tech-stack-pills {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+    .tech-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--bg-card-border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #cbd5e1;
+    }
+
+    /* Simulator Main Frame */
+    .simulator-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      margin-bottom: 60px;
+    }
+    .sim-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--bg-card-border);
+      margin-bottom: 30px;
+    }
+    .sim-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cb-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cb-status-indicator.closed {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      box-shadow: 0 0 20px var(--success-glow);
+    }
+    .cb-status-indicator.open {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+      box-shadow: 0 0 20px var(--danger-glow);
+      animation: pulse-danger 1.5s infinite;
+    }
+    .cb-status-indicator.half-open {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      box-shadow: 0 0 20px var(--warning-glow);
+    }
+    @keyframes pulse-danger {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Pipeline Visualizer */
+    .pipeline-container {
+      margin-bottom: 36px;
+      padding: 24px;
+      background: rgba(10, 15, 28, 0.6);
+      border-radius: 16px;
+      border: 1px solid var(--bg-card-border);
+      position: relative;
+      overflow-x: auto;
+    }
+    .pipeline-nodes {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 900px;
+      position: relative;
+      padding: 20px 0;
+    }
+    .pipeline-line {
+      position: absolute;
+      top: 50%;
+      left: 40px;
+      right: 40px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      z-index: 1;
+      transform: translateY(-50%);
+    }
+    .node {
+      position: relative;
+      z-index: 2;
+      background: #111a2e;
+      border: 2px solid var(--bg-card-border);
+      border-radius: 14px;
+      padding: 14px 18px;
+      text-align: center;
+      width: 155px;
+      transition: all 0.3s;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+    .node.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 25px var(--primary-glow);
+      transform: translateY(-3px);
+    }
+    .node.active-error {
+      border-color: var(--danger);
+      box-shadow: 0 0 25px var(--danger-glow);
+      transform: translateY(-3px);
+    }
+    .node-icon {
+      font-size: 1.5rem;
+      margin-bottom: 6px;
+    }
+    .node-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .node-desc {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Packet animation */
+    .packet {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--primary);
+      z-index: 10;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: left 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+      display: none;
+    }
+
+    /* Control Grid */
+    .sim-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+    @media (max-width: 900px) {
+      .sim-controls-grid { grid-template-columns: 1fr; }
+    }
+    .control-card {
+      background: rgba(13, 20, 36, 0.65);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-control {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.15);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #050a14;
+      box-shadow: 0 4px 15px var(--primary-glow);
+      width: 100%;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(0, 210, 255, 0.6);
+      transform: translateY(-1px);
+    }
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .btn-outline-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .btn-outline-danger:hover, .btn-outline-danger.active {
+      background: var(--danger);
+      color: white;
+      box-shadow: 0 0 15px var(--danger-glow);
+    }
+    .btn-outline-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+    .btn-outline-success:hover, .btn-outline-success.active {
+      background: var(--success);
+      color: #032b1d;
+      box-shadow: 0 0 15px var(--success-glow);
+    }
+    .btn-outline-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fcd34d;
+    }
+    .btn-outline-warning:hover, .btn-outline-warning.active {
+      background: var(--warning);
+      color: #2e1d03;
+      box-shadow: 0 0 15px var(--warning-glow);
+    }
+
+    /* Circuit Breaker Metrics Gauge */
+    .metrics-bar-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 600px) {
+      .metrics-bar-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .metric-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-top: 4px;
+      color: var(--primary);
+    }
+    .metric-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Sliding window visualization */
+    .sliding-window-visual {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: center;
+    }
+    .window-slot {
+      width: 44px;
+      height: 38px;
+      border-radius: 8px;
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      transition: all 0.3s;
+    }
+    .window-slot.pass {
+      border: 1px solid var(--success);
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      box-shadow: 0 0 10px var(--success-glow);
+    }
+    .window-slot.fail {
+      border: 1px solid var(--danger);
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      box-shadow: 0 0 10px var(--danger-glow);
+    }
+
+    /* Live Terminal Log */
+    .terminal-container {
+      background: #050811;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+    .terminal-header {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #f59e0b; }
+    .dot.green { background: #10b981; }
+    .terminal-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .terminal-body {
+      padding: 16px;
+      height: 240px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    .log-line {
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .log-time { color: #64748b; margin-right: 8px; }
+    .log-info { color: #38bdf8; font-weight: 600; }
+    .log-warn { color: #fbbf24; font-weight: 600; }
+    .log-error { color: #f87171; font-weight: 600; }
+    .log-success { color: #4ade80; font-weight: 600; }
+    .log-cb { color: #c084fc; font-weight: 700; }
+
+    /* Features Grid */
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .section-sub {
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 40px;
+      max-width: 650px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 80px;
+    }
+    @media (max-width: 900px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 26px;
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(0, 210, 255, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 18px;
+    }
+    .icon-kafka { background: rgba(0, 210, 255, 0.15); color: var(--primary); }
+    .icon-cb { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    .icon-docker { background: rgba(139, 92, 246, 0.15); color: var(--purple); }
+    .feature-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* API Documentation Cards */
+    .api-section {
+      margin-bottom: 80px;
+    }
+    .api-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .api-endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .method-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+    }
+    .method-post { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .method-get { background: rgba(0, 210, 255, 0.2); color: #38bdf8; border: 1px solid rgba(0, 210, 255, 0.4); }
+    .endpoint-path {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .endpoint-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .code-block {
+      background: #050811;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      overflow-x: auto;
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--bg-card-border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <span class="brand-title">Resilient Notification Service</span>
+          <span class="brand-sub">Kafka &bull; Resilience4j &bull; Spring Boot 3</span>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="#simulator">Simulator</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#api">API Docs</a>
+        <a href="https://github.com/Bhargavitalatam/Notification_Service" target="_blank" class="btn-github">
+          <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          View GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        Production Grade Event-Driven Architecture
+      </div>
+      <h1>Resilient Notification Service</h1>
+      <p>
+        Asynchronous high-throughput notification processing with Apache Kafka message brokers, orchestrated with Docker Compose, and protected by Resilience4j Circuit Breakers to prevent cascading downstream failures.
+      </p>
+      <div class="tech-stack-pills">
+        <span class="tech-pill">Java 17</span>
+        <span class="tech-pill">Spring Boot 3.3.4</span>
+        <span class="tech-pill">Apache Kafka 7.0.1</span>
+        <span class="tech-pill">Apache Zookeeper</span>
+        <span class="tech-pill">Resilience4j 2.2.0</span>
+        <span class="tech-pill">Docker Compose</span>
+        <span class="tech-pill">Actuator Health</span>
+      </div>
+    </section>
+
+    <!-- Interactive Simulation Studio -->
+    <section id="simulator" class="simulator-wrapper">
+      <div class="sim-header">
+        <div class="sim-title">
+          <span>Interactive Circuit Breaker & Kafka Simulator</span>
+        </div>
+        <div id="cbIndicator" class="cb-status-indicator closed">
+          <span id="cbIndicatorDot">&bull;</span>
+          <span id="cbIndicatorText">CIRCUIT BREAKER: CLOSED</span>
+        </div>
+      </div>
+
+      <!-- Live Pipeline Visualizer -->
+      <div class="pipeline-container">
+        <div class="pipeline-line"></div>
+        <div id="packet" class="packet"></div>
+        <div class="pipeline-nodes">
+          <div id="nodeClient" class="node">
+            <div class="node-icon">📱</div>
+            <div class="node-title">Client API</div>
+            <div class="node-desc">POST /send</div>
+          </div>
+          <div id="nodeKafka" class="node">
+            <div class="node-icon">📬</div>
+            <div class="node-title">Kafka Broker</div>
+            <div class="node-desc">Key: userId</div>
+          </div>
+          <div id="nodeConsumer" class="node">
+            <div class="node-icon">⚙️</div>
+            <div class="node-title">Consumer</div>
+            <div class="node-desc">@KafkaListener</div>
+          </div>
+          <div id="nodeCircuitBreaker" class="node">
+            <div class="node-icon">🛡️</div>
+            <div class="node-title">Resilience4j</div>
+            <div class="node-desc" id="nodeCbDesc">State: CLOSED</div>
+          </div>
+          <div id="nodeMockUser" class="node">
+            <div class="node-icon">👤</div>
+            <div class="node-title">User Service</div>
+            <div class="node-desc" id="nodeMockDesc">HTTP 200 OK</div>
+          </div>
+          <div id="nodeDispatch" class="node">
+            <div class="node-icon">🚀</div>
+            <div class="node-title">Dispatched</div>
+            <div class="node-desc" id="nodeDispatchDesc">Ready</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls & Metrics -->
+      <div class="sim-controls-grid">
+        <!-- Trigger Notification Form -->
+        <div class="control-card">
+          <div class="card-title">
+            <span>1. Trigger Notification Request</span>
+            <span style="font-size: 0.75rem; color: var(--primary);">POST /api/notifications/send</span>
+          </div>
+          <div class="form-group">
+            <label>User ID (Partition Key)</label>
+            <input type="text" id="inputUserId" class="form-control" value="alice101">
+          </div>
+          <div class="form-group">
+            <label>Notification Type</label>
+            <select id="inputType" class="form-control">
+              <option value="EMAIL">EMAIL</option>
+              <option value="SMS">SMS</option>
+              <option value="PUSH">PUSH</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Message Content</label>
+            <input type="text" id="inputMessage" class="form-control" value="Your order #8921 has shipped!">
+          </div>
+          <button id="btnSend" class="btn btn-primary" onclick="triggerNotification()">
+            <span>Send Notification Event</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+
+        <!-- Fault Simulation Controls -->
+        <div class="control-card">
+          <div class="card-title">
+            <span>2. Downstream Fault Injection</span>
+            <span style="font-size: 0.75rem; color: #cbd5e1;">Mock User Profile Service</span>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px;">
+            Simulate downstream outages or latency to observe the Circuit Breaker transition from <strong>CLOSED</strong> to <strong>OPEN</strong> (fail-fast), then test self-healing into <strong>HALF_OPEN</strong>.
+          </p>
+          <div class="btn-group">
+            <button id="btnMockHealthy" class="btn btn-outline-success active" onclick="setMockMode('healthy')">
+              ✓ Normal (200 OK)
+            </button>
+            <button id="btnMockFail" class="btn btn-outline-danger" onclick="setMockMode('fail')">
+              ⚠ Outage (500 Error)
+            </button>
+          </div>
+          <div class="btn-group">
+            <button id="btnMockSlow" class="btn btn-outline-warning" onclick="setMockMode('slow')">
+              ⏱ Slow Call (3000ms)
+            </button>
+            <button class="btn" style="background: rgba(255,255,255,0.06); color: #cbd5e1;" onclick="resetCircuitBreaker()">
+              ↺ Reset Breaker
+            </button>
+          </div>
+
+          <!-- Sliding Window & Metrics -->
+          <div style="margin-top: 18px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">
+              <span>SLIDING CALL WINDOW (SIZE 5)</span>
+              <span id="txtWindowStatus">0/5 recorded</span>
+            </div>
+            <div class="sliding-window-visual">
+              <div id="slot-0" class="window-slot">-</div>
+              <div id="slot-1" class="window-slot">-</div>
+              <div id="slot-2" class="window-slot">-</div>
+              <div id="slot-3" class="window-slot">-</div>
+              <div id="slot-4" class="window-slot">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="metrics-bar-grid">
+        <div class="metric-box">
+          <div class="metric-label">Failure Rate</div>
+          <div id="metricFailRate" class="metric-value">0.0%</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Failure Threshold</div>
+          <div class="metric-value" style="color: var(--danger);">50.0%</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Total Processed</div>
+          <div id="metricTotalCalls" class="metric-value">0</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Cooldown Timer</div>
+          <div id="metricCooldown" class="metric-value" style="color: var(--warning);">Ready</div>
+        </div>
+      </div>
+
+      <!-- Live Terminal Console -->
+      <div style="margin-top: 24px;">
+        <div class="terminal-container">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <div class="dot red"></div>
+              <div class="dot yellow"></div>
+              <div class="dot green"></div>
+            </div>
+            <div class="terminal-title">LIVE APPLICATION LOG STREAM (Spring Boot &bull; Kafka &bull; Resilience4j)</div>
+            <button onclick="clearTerminal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.75rem; cursor: pointer;">Clear</button>
+          </div>
+          <div id="terminalBody" class="terminal-body">
+            <div class="log-line"><span class="log-time">[INIT]</span> <span class="log-info">NotificationServiceApplication started on port 8080.</span></div>
+            <div class="log-line"><span class="log-time">[INIT]</span> <span class="log-info">Kafka consumer group 'notification_group' subscribed to topic 'notification_events'.</span></div>
+            <div class="log-line"><span class="log-time">[INIT]</span> <span class="log-cb">Resilience4j CircuitBreaker 'userProfileService' registered in state: CLOSED.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture Breakdown -->
+    <section id="architecture">
+      <h2 class="section-title">Architecture Highlights</h2>
+      <p class="section-sub">
+        Engineered following enterprise patterns for high resilience, zero thread blocking, and deterministic failure isolation.
+      </p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon icon-kafka">⚡</div>
+          <h3>Event-Driven Decoupling</h3>
+          <p>
+            REST controllers immediately return <strong>202 Accepted</strong> upon queuing requests into Kafka. Partitioning by <code>userId</code> guarantees strict sequential processing per user without cluster bottlenecks.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-cb">🛡️</div>
+          <h3>Circuit Breaker & Fallback</h3>
+          <p>
+            Guarded by <strong>Resilience4j</strong> with a 50% failure rate threshold. When tripped to <strong>OPEN</strong>, downstream calls fail fast without network execution, deferring notifications gracefully.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-docker">🐳</div>
+          <h3>One-Command Containerization</h3>
+          <p>
+            Orchestrated via <strong>Docker Compose</strong> linking Zookeeper, Kafka broker, and the Notification Service on a dedicated bridge network with built-in Actuator healthchecks.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- API Reference Section -->
+    <section id="api" class="api-section">
+      <h2 class="section-title">REST API Specifications</h2>
+      <p class="section-sub">
+        Production-ready endpoints for sending notifications, querying in-memory records, and observing Actuator metrics.
+      </p>
+
+      <div class="api-card">
+        <div class="api-endpoint-header">
+          <span class="method-badge method-post">POST</span>
+          <span class="endpoint-path">/api/notifications/send</span>
+          <span style="margin-left: auto; font-size: 0.8rem; color: var(--success);">202 Accepted</span>
+        </div>
+        <p class="endpoint-desc">Accepts notification requests and asynchronously dispatches them to Apache Kafka.</p>
+        <div class="code-block">
+curl -X POST http://localhost:8080/api/notifications/send \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "alice101",
+    "message": "Your order #4492 has shipped!",
+    "notificationType": "EMAIL"
+  }'
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-endpoint-header">
+          <span class="method-badge method-get">GET</span>
+          <span class="endpoint-path">/actuator/circuitbreakers</span>
+          <span style="margin-left: auto; font-size: 0.8rem; color: var(--primary);">200 OK</span>
+        </div>
+        <p class="endpoint-desc">Inspects real-time Resilience4j circuit breaker state, buffered calls, and failure rates.</p>
+        <div class="code-block">
+curl http://localhost:8080/actuator/circuitbreakers
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-endpoint-header">
+          <span class="method-badge method-post">POST</span>
+          <span class="endpoint-path">/mock-users/configure?fail=true</span>
+          <span style="margin-left: auto; font-size: 0.8rem; color: var(--warning);">200 OK</span>
+        </div>
+        <p class="endpoint-desc">Dynamically simulates downstream service outages to demonstrate Circuit Breaker state transitions.</p>
+        <div class="code-block">
+# Trigger failure mode
+curl -X POST "http://localhost:8080/mock-users/configure?fail=true"
+
+# Restore healthy state
+curl -X POST "http://localhost:8080/mock-users/configure?fail=false"
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>
+        Resilient Notification Service &bull; Developed by <a href="https://github.com/Bhargavitalatam" target="_blank">Satya Bhargavi Talatam</a> &bull;
+        <a href="https://github.com/Bhargavitalatam/Notification_Service" target="_blank">GitHub Repository</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- Simulation JavaScript Engine -->
+  <script>
+    // State machine definition
+    const STATE = {
+      cbState: 'CLOSED', // 'CLOSED' | 'OPEN' | 'HALF_OPEN'
+      mockMode: 'healthy', // 'healthy' | 'fail' | 'slow'
+      windowSize: 5,
+      minCalls: 4,
+      threshold: 50,
+      openCooldownSeconds: 5,
+      history: [],
+      totalCalls: 0,
+      cooldownTimer: null,
+      cooldownRemaining: 0,
+      halfOpenPermitted: 2,
+      halfOpenCalls: 0
+    };
+
+    function getTime() {
+      const now = new Date();
+      return now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+    }
+
+    function addLog(msg, type = 'info') {
+      const body = document.getElementById('terminalBody');
+      const div = document.createElement('div');
+      div.className = 'log-line';
+
+      let typeClass = 'log-info';
+      if (type === 'warn') typeClass = 'log-warn';
+      if (type === 'error') typeClass = 'log-error';
+      if (type === 'success') typeClass = 'log-success';
+      if (type === 'cb') typeClass = 'log-cb';
+
+      div.innerHTML = `<span class="log-time">[${getTime()}]</span> <span class="${typeClass}">${msg}</span>`;
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminalBody').innerHTML = '';
+      addLog('Terminal logs cleared.', 'info');
+    }
+
+    function setMockMode(mode) {
+      STATE.mockMode = mode;
+      document.getElementById('btnMockHealthy').classList.toggle('active', mode === 'healthy');
+      document.getElementById('btnMockFail').classList.toggle('active', mode === 'fail');
+      document.getElementById('btnMockSlow').classList.toggle('active', mode === 'slow');
+
+      const mockDesc = document.getElementById('nodeMockDesc');
+      if (mode === 'healthy') {
+        mockDesc.innerText = 'HTTP 200 OK';
+        mockDesc.style.color = '#34d399';
+        addLog('Mock User Profile Service configured: Normal (HTTP 200 OK)', 'info');
+      } else if (mode === 'fail') {
+        mockDesc.innerText = 'HTTP 500 Outage';
+        mockDesc.style.color = '#f87171';
+        addLog('Mock User Profile Service configured: Simulated Outage (HTTP 500 Internal Error)', 'warn');
+      } else if (mode === 'slow') {
+        mockDesc.innerText = '3000ms Delay';
+        mockDesc.style.color = '#fbbf24';
+        addLog('Mock User Profile Service configured: Latency Simulation (3000ms timeout)', 'warn');
+      }
+    }
+
+    function updateUi() {
+      // Status Indicator
+      const ind = document.getElementById('cbIndicator');
+      const indText = document.getElementById('cbIndicatorText');
+      const nodeCbDesc = document.getElementById('nodeCbDesc');
+
+      ind.className = 'cb-status-indicator ' + STATE.cbState.toLowerCase();
+      indText.innerText = 'CIRCUIT BREAKER: ' + STATE.cbState;
+      nodeCbDesc.innerText = 'State: ' + STATE.cbState;
+
+      // Sliding Window Visualization
+      for (let i = 0; i < STATE.windowSize; i++) {
+        const slot = document.getElementById('slot-' + i);
+        if (i < STATE.history.length) {
+          const pass = STATE.history[i];
+          slot.className = 'window-slot ' + (pass ? 'pass' : 'fail');
+          slot.innerText = pass ? '✓' : '✗';
+        } else {
+          slot.className = 'window-slot';
+          slot.innerText = '-';
+        }
+      }
+      document.getElementById('txtWindowStatus').innerText = `${STATE.history.length}/${STATE.windowSize} recorded`;
+
+      // Failure Rate
+      let failRate = 0;
+      if (STATE.history.length > 0) {
+        const fails = STATE.history.filter(h => !h).length;
+        failRate = ((fails / STATE.history.length) * 100).toFixed(1);
+      }
+      document.getElementById('metricFailRate').innerText = failRate + '%';
+      document.getElementById('metricFailRate').style.color = (failRate >= STATE.threshold) ? '#f87171' : '#00d2ff';
+      document.getElementById('metricTotalCalls').innerText = STATE.totalCalls;
+    }
+
+    function resetCircuitBreaker() {
+      STATE.cbState = 'CLOSED';
+      STATE.history = [];
+      STATE.halfOpenCalls = 0;
+      if (STATE.cooldownTimer) clearInterval(STATE.cooldownTimer);
+      STATE.cooldownRemaining = 0;
+      document.getElementById('metricCooldown').innerText = 'Ready';
+      updateUi();
+      addLog('>>> [CIRCUIT BREAKER RESET] userProfileService manually reset to CLOSED state.', 'cb');
+    }
+
+    function startCooldownTimer() {
+      STATE.cooldownRemaining = STATE.openCooldownSeconds;
+      document.getElementById('metricCooldown').innerText = STATE.cooldownRemaining + 's';
+
+      if (STATE.cooldownTimer) clearInterval(STATE.cooldownTimer);
+
+      STATE.cooldownTimer = setInterval(() => {
+        STATE.cooldownRemaining--;
+        if (STATE.cooldownRemaining > 0) {
+          document.getElementById('metricCooldown').innerText = STATE.cooldownRemaining + 's';
+        } else {
+          clearInterval(STATE.cooldownTimer);
+          document.getElementById('metricCooldown').innerText = 'Probing...';
+          transitionToHalfOpen();
+        }
+      }, 1000);
+    }
+
+    function transitionToHalfOpen() {
+      STATE.cbState = 'HALF_OPEN';
+      STATE.halfOpenCalls = 0;
+      STATE.history = [];
+      updateUi();
+      addLog('>>> [CIRCUIT BREAKER STATE TRANSITION] userProfileService transitioned from OPEN to HALF_OPEN (Allowing 2 probe requests)', 'cb');
+    }
+
+    function transitionToOpen() {
+      STATE.cbState = 'OPEN';
+      updateUi();
+      addLog('>>> [CIRCUIT BREAKER STATE TRANSITION] userProfileService transitioned from CLOSED to OPEN (Threshold exceeded: >= 50% failures)', 'error');
+      startCooldownTimer();
+    }
+
+    function transitionToClosed() {
+      STATE.cbState = 'CLOSED';
+      STATE.history = [true, true];
+      STATE.halfOpenCalls = 0;
+      document.getElementById('metricCooldown').innerText = 'Ready';
+      updateUi();
+      addLog('>>> [CIRCUIT BREAKER STATE TRANSITION] userProfileService recovered: transitioned from HALF_OPEN to CLOSED.', 'success');
+    }
+
+    // Pipeline Animation helper
+    function animatePipeline(onComplete) {
+      const nodes = [
+        document.getElementById('nodeClient'),
+        document.getElementById('nodeKafka'),
+        document.getElementById('nodeConsumer'),
+        document.getElementById('nodeCircuitBreaker'),
+        document.getElementById('nodeMockUser'),
+        document.getElementById('nodeDispatch')
+      ];
+
+      nodes.forEach(n => n.classList.remove('active', 'active-error'));
+
+      let step = 0;
+      function nextStep() {
+        if (step > 0) nodes[step - 1].classList.remove('active');
+        if (step < nodes.length) {
+          nodes[step].classList.add('active');
+          step++;
+          setTimeout(nextStep, 200);
+        } else {
+          setTimeout(onComplete, 100);
+        }
+      }
+      nextStep();
+    }
+
+    function triggerNotification() {
+      const userId = document.getElementById('inputUserId').value.trim() || 'user101';
+      const type = document.getElementById('inputType').value;
+      const message = document.getElementById('inputMessage').value.trim() || 'Notification Message';
+      const eventId = 'evt_' + Math.random().toString(36).substr(2, 9);
+
+      document.getElementById('btnSend').disabled = true;
+
+      addLog(`[API CONTROLLER] POST /api/notifications/send received request for userId='${userId}'`, 'info');
+      addLog(`[KAFKA PRODUCER] Published NotificationEvent to topic 'notification_events' [Key=${userId}, eventId=${eventId}]`, 'info');
+
+      animatePipeline(() => {
+        document.getElementById('btnSend').disabled = false;
+        processConsumedEvent(userId, type, message, eventId);
+      });
+    }
+
+    function processConsumedEvent(userId, type, message, eventId) {
+      STATE.totalCalls++;
+      addLog(`[KAFKA CONSUMER] Consumed event for user '${userId}', type='${type}'`, 'info');
+
+      const dispatchDesc = document.getElementById('nodeDispatchDesc');
+
+      // Check Circuit Breaker state
+      if (STATE.cbState === 'OPEN') {
+        // Fast-fail immediately!
+        addLog(`>>> [CIRCUIT BREAKER CALL NOT PERMITTED] Instance: userProfileService is in OPEN state. Request failed fast without network call.`, 'error');
+        addLog(`Circuit Breaker open or call failed for user: ${userId}. Error: CallNotPermittedException - Circuit Breaker open, notification deferred`, 'warn');
+        addLog(`[NOTIFICATION DEFERRED] Fallback user profile used for user: ${userId} [fallback@example.com, +1-FALLBACK]. Notification deferred.`, 'warn');
+
+        dispatchDesc.innerText = 'DEFERRED (FALLBACK)';
+        dispatchDesc.style.color = '#f59e0b';
+        updateUi();
+        return;
+      }
+
+      // If CLOSED or HALF_OPEN: execute call against mock service
+      addLog(`Attempting to call User Profile Service for user: ${userId}`, 'info');
+
+      const isSuccess = (STATE.mockMode === 'healthy');
+
+      if (isSuccess) {
+        // Call succeeds
+        addLog(`[NOTIFICATION SENT] Notification successfully dispatched to user: ${userId} [Email: ${userId}@example.com, Phone: +1-555-0100] Message: '${message}'`, 'success');
+        dispatchDesc.innerText = 'SENT (SUCCESS)';
+        dispatchDesc.style.color = '#10b981';
+
+        recordCallResult(true);
+      } else {
+        // Call fails (outage or timeout)
+        const errDetail = STATE.mockMode === 'fail' ? '500 Internal Server Error' : '2000ms Request Timeout';
+        addLog(`Circuit Breaker open or call failed for user: ${userId}. Error: ${errDetail} - Circuit Breaker open, notification deferred`, 'error');
+        addLog(`[NOTIFICATION DEFERRED] Fallback user profile used for user: ${userId}. Notification deferred due to external service unavailability.`, 'warn');
+
+        dispatchDesc.innerText = 'DEFERRED (FALLBACK)';
+        dispatchDesc.style.color = '#ef4444';
+
+        recordCallResult(false);
+      }
+    }
+
+    function recordCallResult(isSuccess) {
+      if (STATE.cbState === 'HALF_OPEN') {
+        STATE.halfOpenCalls++;
+        if (!isSuccess) {
+          // Any failure in HALF_OPEN immediately re-opens the breaker!
+          addLog('>>> [CIRCUIT BREAKER PROBE FAILED] Probe call failed in HALF_OPEN state.', 'error');
+          transitionToOpen();
+        } else if (STATE.halfOpenCalls >= STATE.halfOpenPermitted) {
+          // Permitted successful calls in HALF_OPEN close the breaker
+          transitionToClosed();
+        }
+        updateUi();
+        return;
+      }
+
+      // In CLOSED state: record into sliding window
+      if (STATE.history.length >= STATE.windowSize) {
+        STATE.history.shift(); // remove oldest
+      }
+      STATE.history.push(isSuccess);
+
+      // Evaluate threshold if minimum calls met
+      if (STATE.history.length >= STATE.minCalls) {
+        const failures = STATE.history.filter(h => !h).length;
+        const failRate = (failures / STATE.history.length) * 100;
+        if (failRate >= STATE.threshold) {
+          transitionToOpen();
+        }
+      }
+
+      updateUi();
+    }
+
+    // Initialize UI on load
+    updateUi();
+  </script>
+</body>
+</html>
