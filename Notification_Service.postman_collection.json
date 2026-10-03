@@ -1,0 +1,302 @@
+{
+	"info": {
+		"_postman_id": "8c59f234-91da-4547-b892-748df3a3cb8e",
+		"name": "Notification Service API & Resilience Suite",
+		"description": "Comprehensive Postman collection for testing the Event-Driven Notification Service, Kafka Messaging, and Resilience4j Circuit Breaker transitions.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Notification API",
+			"item": [
+				{
+					"name": "Send Notification (Email)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"alice101\",\n  \"message\": \"Your order #4492 has shipped!\",\n  \"notificationType\": \"EMAIL\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"send"
+							]
+						},
+						"description": "Submits a notification request. The service asynchronously queues this into Apache Kafka and returns HTTP 202 Accepted."
+					},
+					"response": []
+				},
+				{
+					"name": "Send Notification (SMS)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"bob202\",\n  \"message\": \"Your verification code is 894321\",\n  \"notificationType\": \"SMS\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Processed Records",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/records",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"records"
+							]
+						},
+						"description": "Returns all notification records processed by the Kafka consumer, including contact information and delivery status."
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Processed Records",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/records",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"records"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Mock User Profile Service & Fault Simulation",
+			"item": [
+				{
+					"name": "Get User Profile (Normal)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/mock-users/alice101",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"mock-users",
+								"alice101"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Profile (Simulate 500 Failure)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/mock-users/alice101?fail=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"mock-users",
+								"alice101"
+							],
+							"query": [
+								{
+									"key": "fail",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Profile (Simulate 3000ms Delay)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/mock-users/alice101?delay=3000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"mock-users",
+								"alice101"
+							],
+							"query": [
+								{
+									"key": "delay",
+									"value": "3000"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Configure Global Simulation - Trip Breaker (Fail ON)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/mock-users/configure?fail=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"mock-users",
+								"configure"
+							],
+							"query": [
+								{
+									"key": "fail",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Sets global mock failure mode to true. All subsequent calls from Kafka consumer will fail with HTTP 500, tripping the Circuit Breaker to OPEN."
+					},
+					"response": []
+				},
+				{
+					"name": "Configure Global Simulation - Recover (Fail OFF)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/mock-users/configure?fail=false&delay=0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"mock-users",
+								"configure"
+							],
+							"query": [
+								{
+									"key": "fail",
+									"value": "false"
+								},
+								{
+									"key": "delay",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Restores mock service to healthy state. When waitDurationInOpenState expires, new requests will transition through HALF_OPEN back to CLOSED."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Observability & Actuator",
+			"item": [
+				{
+					"name": "Health Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						},
+						"description": "Spring Boot Actuator health check reporting overall status and circuit breaker state."
+					},
+					"response": []
+				},
+				{
+					"name": "Circuit Breakers Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/circuitbreakers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actuator",
+								"circuitbreakers"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Circuit Breaker Events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/circuitbreakerevents",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actuator",
+								"circuitbreakerevents"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		}
+	]
+}

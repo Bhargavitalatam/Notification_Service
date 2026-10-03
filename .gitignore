@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IDE & Editors
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Java
+*.class
+*.jar
+*.war
+
+# Environment & Logs
+.env.local
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
