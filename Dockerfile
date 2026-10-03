@@ -1,14 +1,18 @@
-# Stage 1: Build application using Gradle
-FROM gradle:8.7-jdk17 AS builder
+# Multi-stage Dockerfile for Notification Service
+FROM eclipse-temurin:17-jdk-jammy AS builder
 WORKDIR /app
 
-# Copy configuration and cache dependencies
+# Copy gradle wrapper and configuration
+COPY gradlew ./
+COPY gradle ./gradle
 COPY build.gradle settings.gradle ./
-RUN gradle dependencies --no-daemon || true
 
-# Copy source code and build jar (tests executed separately in CI/CD pipeline)
+# Grant execution permissions
+RUN chmod +x ./gradlew
+
+# Copy source code and build production jar
 COPY src ./src
-RUN gradle bootJar -x test --no-daemon
+RUN ./gradlew bootJar -x test --no-daemon
 
 # Stage 2: Minimal, secure production runtime
 FROM eclipse-temurin:17-jre-jammy
